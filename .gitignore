@@ -1,0 +1,5 @@
+*.tgz
+*.tar.gz
+andon
+release
+dist

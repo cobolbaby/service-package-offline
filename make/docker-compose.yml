@@ -1,0 +1,95 @@
+version: "2.3"
+services:
+
+  zoo1:
+    image: registry.inventec/proxy/library/zookeeper:3.4.14
+    restart: always
+    cpu_count: 1
+    mem_limit: 500M
+    container_name: zoo1
+    hostname: zoo1
+    ports:
+      - "2181:2181"
+    volumes:
+      - /data/ssd/zookeeper/data:/data
+      - /data/ssd/zookeeper/datalog:/datalog
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_PORT: 2181
+      ZOO_SERVERS: server.1=zoo1:2888:3888
+      ZOO_AUTOPURGE_PURGEINTERVAL: 1
+      ZOO_INIT_LIMIT: 10
+      ZOO_SYNC_LIMIT: 10
+      ZOO_TICK_TIME: 4000
+
+  kafka1:
+    image: registry.inventec/proxy/confluentinc/cp-kafka:5.5.7
+    restart: always
+    cpu_count: 2
+    mem_limit: 3g
+    container_name: kafka1
+    hostname: kafka1
+    ports:
+      - "19092:19092"
+      - "9093:9093"
+      # - "9990:9990"
+      # - "9999:9999"
+    volumes:
+      - /data/hdd/kafka:/kafka
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_LOG_DIRS: /kafka/kafka-logs-broker1
+      KAFKA_ZOOKEEPER_CONNECT: zoo1:2181
+      KAFKA_ZOOKEEPER_CONNECTION_TIMEOUT_MS: 30000
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:19092,EXTERNAL://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://${DOCKER_HOST_IP}:19092,EXTERNAL://${DOCKER_HOST_IP}:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "INTERNAL:PLAINTEXT,EXTERNAL:SASL_PLAINTEXT"
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_LOG_CLEANUP_POLICY: delete,compact
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_RETENTION_BYTES: 21474836480
+      KAFKA_LOG_CLEANER_DELETE_RETENTION_MS: 86400000
+      KAFKA_MESSAGE_MAX_BYTES: 10485760
+      KAFKA_REPLICA_FETCH_MAX_BYTES: 10485760
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_LOG_MESSAGE_TIMESTAMP_TYPE: LogAppendTime
+      KAFKA_HEAP_OPTS: "-Xmx2g -Xms2g"
+      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      # KAFKA_JMX_HOSTNAME: ${DOCKER_HOST_IP}
+      # KAFKA_JMX_PORT: 9999
+      # KAFKA_OPTS: "-javaagent:/opt/kafka/jmx_exporter/jmx_prometheus_javaagent-0.14.0.jar=9990:/opt/kafka/jmx_exporter/kafka-agent.yml"
+      # List of enabled mechanisms, can be more than one
+      KAFKA_SASL_ENABLED_MECHANISMS: PLAIN
+      # Specify one of of the SASL mechanisms
+      KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: PLAIN
+      KAFKA_LISTENER_NAME_EXTERNAL_PLAIN_SASL_JAAS_CONFIG: |
+        org.apache.kafka.common.security.plain.PlainLoginModule required \
+        username="admin" \
+        password="admin123" \
+        user_admin="admin123" \
+        user_andon="andon";
+      KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE: "false"
+    depends_on:
+      - zoo1
+    stop_grace_period: 5m
+
+  postgres1:
+    image: registry.inventec/proxy/library/postgres:12.9
+    container_name: pg01
+    hostname: pg01
+    ports:
+      - "5493:5432"
+    volumes:
+      - /data/ssd/postgres/12/data:/var/lib/postgresql/data
+      - /etc/localtime:/etc/localtime
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "pg12@2020}CB0cH"
+      PGDATA: /var/lib/postgresql/data
+    user: postgres
+    restart: always
+    cpu_count: 2
+    mem_limit: 4g
