@@ -33,7 +33,7 @@ services:
 
   broker:
     image: registry.inventec/proxy/confluentinc/cp-kafka:5.5.7
-    container_name: kafka
+    container_name: broker
     hostname: kafka
     # ports:
     #   - "9990:9990"
