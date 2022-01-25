@@ -27,8 +27,8 @@ fi
 h2 "[Step $item]: preparing environment ...";  let item+=1
 if [ -n "$host" ]
 then
-    sed -i "s/\$\{DOCKER_HOST_IP\}/$host/g" ./docker-compose.yml
-    sed -i "s/\$\{DOCKER_HOST_IP\}/$host/g" ./grafana/grafana.ini
+    sed -i "s/\${DOCKER_HOST_IP}/$host/g" ./docker-compose.yml
+    # sed -i "s/\${DOCKER_HOST_IP}/$host/g" ./config/grafana/grafana.ini
 fi
 
 h2 "[Step $item]: starting infra service ...";  let item+=1
