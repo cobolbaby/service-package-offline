@@ -1,15 +1,19 @@
-version: "2.3"
-services:
+version: "2.4"
 
-  zoo1:
+x-logging: 
+  &default-logging
+  options:
+    max-size: "12m"
+    max-file: "5"
+  driver: json-file
+
+services:
+  zoo:
     image: registry.inventec/proxy/library/zookeeper:3.4.14
-    restart: always
-    cpu_count: 1
-    mem_limit: 500M
-    container_name: zoo1
-    hostname: zoo1
-    ports:
-      - "2181:2181"
+    container_name: zoo
+    hostname: zoo
+    expose:
+      - "2181"
     volumes:
       - /data/ssd/zookeeper/data:/data
       - /data/ssd/zookeeper/datalog:/datalog
@@ -17,34 +21,36 @@ services:
     environment:
       ZOO_MY_ID: 1
       ZOO_PORT: 2181
-      ZOO_SERVERS: server.1=zoo1:2888:3888
+      ZOO_SERVERS: server.1=zoo:2888:3888
       ZOO_AUTOPURGE_PURGEINTERVAL: 1
       ZOO_INIT_LIMIT: 10
       ZOO_SYNC_LIMIT: 10
       ZOO_TICK_TIME: 4000
-
-  kafka1:
-    image: registry.inventec/proxy/confluentinc/cp-kafka:5.5.7
     restart: always
-    cpu_count: 2
-    mem_limit: 3g
-    container_name: kafka1
-    hostname: kafka1
-    ports:
-      - "19092:19092"
-      - "9093:9093"
-      # - "9990:9990"
-      # - "9999:9999"
+    logging: *default-logging
+    cpu_count: 1
+    mem_limit: 500M
+
+  broker:
+    image: registry.inventec/proxy/confluentinc/cp-kafka:5.5.7
+    container_name: kafka
+    hostname: kafka
+    # ports:
+    #   - "9990:9990"
+    #   - "9999:9999"
+    expose:
+      - "9093"
+      - "19092"
     volumes:
       - /data/hdd/kafka:/kafka
       - /etc/localtime:/etc/localtime:ro
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_LOG_DIRS: /kafka/kafka-logs-broker1
-      KAFKA_ZOOKEEPER_CONNECT: zoo1:2181
+      KAFKA_ZOOKEEPER_CONNECT: zoo:2181
       KAFKA_ZOOKEEPER_CONNECTION_TIMEOUT_MS: 30000
       KAFKA_LISTENERS: INTERNAL://0.0.0.0:19092,EXTERNAL://0.0.0.0:9093
-      KAFKA_ADVERTISED_LISTENERS: INTERNAL://${DOCKER_HOST_IP}:19092,EXTERNAL://${DOCKER_HOST_IP}:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://${DOCKER_HOST_IP}:19092,EXTERNAL://broker:9093
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "INTERNAL:PLAINTEXT,EXTERNAL:SASL_PLAINTEXT"
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_LOG_CLEANUP_POLICY: delete,compact
@@ -72,24 +78,35 @@ services:
         user_admin="admin123" \
         user_andon="andon";
       KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE: "false"
-    depends_on:
-      - zoo1
     stop_grace_period: 5m
+    restart: always
+    logging: *default-logging
+    cpu_count: 2
+    mem_limit: 3g
+    depends_on:
+      - zoo
 
-  postgres1:
-    image: registry.inventec/proxy/library/postgres:12.9
-    container_name: pg01
-    hostname: pg01
+  postgres:
+    image: registry.inventec/infra/postgres:12.9-pgbackrest
+    container_name: pg
+    hostname: pg
     ports:
       - "5493:5432"
     volumes:
       - /data/ssd/postgres/12/data:/var/lib/postgresql/data
+      # https://cadu.dev/creating-a-docker-image-with-database-preloaded/
+      - ./config/postgres/initdb:/docker-entrypoint-initdb.d/
       - /etc/localtime:/etc/localtime
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: "pg12@2020}CB0cH"
       PGDATA: /var/lib/postgresql/data
-    user: postgres
     restart: always
+    logging: *default-logging
     cpu_count: 2
     mem_limit: 4g
+
+networks:
+  default:
+    external: false
+    name: andon

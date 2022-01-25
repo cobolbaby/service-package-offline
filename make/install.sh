@@ -28,7 +28,16 @@ h2 "[Step $item]: preparing environment ...";  let item+=1
 if [ -n "$host" ]
 then
     sed -i "s/\$\{DOCKER_HOST_IP\}/$host/g" ./docker-compose.yml
+    sed -i "s/\$\{DOCKER_HOST_IP\}/$host/g" ./grafana/grafana.ini
 fi
+
+h2 "[Step $item]: starting infra service ...";  let item+=1
+docker-compose up -d zoo broker postgres
+
+# 等待 Kafka 启动之后，新建 Topic
+h2 "[Step $item]: creating kafka topics ...";  let item+=1
+docker exec -ti broker1 kafka-topics --create --bootstrap-server localhost:19092 --topic insight-andon-init --partitions 3
+docker exec -ti broker1 kafka-topics --create --bootstrap-server localhost:19092 --topic insight-andon-alarm --partitions 3
 
 h2 "[Step $item]: starting Andon ..."
 docker-compose up -d
