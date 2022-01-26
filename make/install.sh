@@ -6,7 +6,7 @@ cd `dirname $0`
     echo "Usage: $0 DOCKER_HOST_IP"
     exit 1
 }
-host=$1
+HOST=$1
 
 source common.sh
 
@@ -26,11 +26,18 @@ then
     docker load -i ./andon*.tar.gz
 fi
 
+PGDATA=/data/ssd/postgres/12/data
+
 h2 "[Step $item]: preparing environment ...";  let item+=1
-if [ -n "$host" ]
+if [ -n "$HOST" ]
 then
-    sed -i "s/\${DOCKER_HOST_IP}/$host/g" ./docker-compose.yml
-    # sed -i "s/\${DOCKER_HOST_IP}/$host/g" ./config/grafana/grafana.ini
+    sed -i "s/\${DOCKER_HOST_IP}/$HOST/g" ./docker-compose.yml
+    sed -i "s/\${PGDATA}/$PGDATA/g" ./docker-compose.yml
+    # sed -i "s/\${DOCKER_HOST_IP}/$HOST/g" ./config/grafana/grafana.ini
+
+    sudo mkdir -p $PGDATA
+    sudo chown -R 999:999 $PGDATA
+    sudo chmod -R 700 $PGDATA
 fi
 
 h2 "[Step $item]: starting infra service ...";  let item+=1

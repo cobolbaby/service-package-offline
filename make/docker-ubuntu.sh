@@ -24,8 +24,9 @@ tar -zxvf docker-compose.offline.tar.gz
 sudo mv docker-compose /usr/local/bin/
 sudo chmod +x /usr/local/bin/docker-compose
 
-# 禁用不必要的服务
-sudo systemctl disable apache2 && sudo systemctl stop apache2
-sudo systemctl disable mysql && sudo systemctl stop mysql
+# 禁用不必要的服务...
+# sudo systemctl disable apache2 && sudo systemctl stop apache2
+# sudo systemctl disable mysql && sudo systemctl stop mysql
 # 邮件服务
-sudo systemctl disable dovecot && sudo systemctl stop dovecot
+# sudo systemctl disable dovecot && sudo systemctl stop dovecot
+
