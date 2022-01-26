@@ -32,7 +32,8 @@ h2 "[Step $item]: preparing environment ...";  let item+=1
 if [ -n "$HOST" ]
 then
     sed -i "s/\${DOCKER_HOST_IP}/$HOST/g" ./docker-compose.yml
-    sed -i "s/\${PGDATA}/$PGDATA/g" ./docker-compose.yml
+    # https://superuser.com/questions/277188/using-sed-to-replace-string-with-special-characters-in-xml-file
+    sed -i "s#\${PGDATA}#$PGDATA#g" ./docker-compose.yml
     # sed -i "s/\${DOCKER_HOST_IP}/$HOST/g" ./config/grafana/grafana.ini
 
     sudo mkdir -p $PGDATA
